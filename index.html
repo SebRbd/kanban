@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestionnaire de tâches</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 32px;
+      color: #f8fafc;
+      letter-spacing: -0.5px;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .column {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .column-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .column-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .col-todo .column-title   { color: #94a3b8; }
+    .col-inprogress .column-title { color: #60a5fa; }
+    .col-done .column-title   { color: #4ade80; }
+
+    .count-badge {
+      font-size: 0.75rem;
+      background: #334155;
+      color: #94a3b8;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-weight: 600;
+    }
+
+    .task-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 40px;
+    }
+
+    .task-list.drag-over {
+      background: rgba(99, 102, 241, 0.08);
+      border-radius: 8px;
+    }
+
+    .task {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px 14px;
+      cursor: grab;
+      user-select: none;
+      transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+      position: relative;
+    }
+
+    .task:hover {
+      border-color: #475569;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .task.dragging {
+      opacity: 0.4;
+      cursor: grabbing;
+    }
+
+    .task-text {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    .task-date {
+      font-size: 0.72rem;
+      color: #64748b;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #475569;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .delete-btn:hover {
+      color: #f87171;
+      background: rgba(248, 113, 113, 0.1);
+    }
+
+    .add-task-form {
+      margin-top: 12px;
+    }
+
+    .add-task-form textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 0.875rem;
+      font-family: inherit;
+      padding: 10px 12px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .add-task-form textarea:focus {
+      border-color: #6366f1;
+    }
+
+    .add-task-form textarea::placeholder {
+      color: #475569;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .btn-add {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 0.83rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-add:hover { background: #4f46e5; }
+
+    .btn-cancel {
+      background: #334155;
+      color: #94a3b8;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.83rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-cancel:hover { background: #475569; }
+
+    .btn-new-task {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: 1px dashed #334155;
+      border-radius: 8px;
+      color: #64748b;
+      font-size: 0.85rem;
+      padding: 10px 12px;
+      width: 100%;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      margin-top: 4px;
+    }
+
+    .btn-new-task:hover {
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+
+    @media (max-width: 700px) {
+      .board { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Gestionnaire de tâches</h1>
+
+<div class="board">
+  <div class="column col-todo" id="col-todo">
+    <div class="column-header">
+      <span class="column-title">À faire</span>
+      <span class="count-badge" id="count-todo">0</span>
+    </div>
+    <div class="task-list" id="list-todo"></div>
+    <div class="add-task-form" id="form-todo" style="display:none">
+      <textarea rows="3" placeholder="Titre de la tâche…" id="input-todo"></textarea>
+      <div class="form-actions">
+        <button class="btn-add" onclick="addTask('todo')">Ajouter</button>
+        <button class="btn-cancel" onclick="hideForm('todo')">Annuler</button>
+      </div>
+    </div>
+    <button class="btn-new-task" onclick="showForm('todo')">＋ Nouvelle tâche</button>
+  </div>
+
+  <div class="column col-inprogress" id="col-inprogress">
+    <div class="column-header">
+      <span class="column-title">En cours</span>
+      <span class="count-badge" id="count-inprogress">0</span>
+    </div>
+    <div class="task-list" id="list-inprogress"></div>
+    <div class="add-task-form" id="form-inprogress" style="display:none">
+      <textarea rows="3" placeholder="Titre de la tâche…" id="input-inprogress"></textarea>
+      <div class="form-actions">
+        <button class="btn-add" onclick="addTask('inprogress')">Ajouter</button>
+        <button class="btn-cancel" onclick="hideForm('inprogress')">Annuler</button>
+      </div>
+    </div>
+    <button class="btn-new-task" onclick="showForm('inprogress')">＋ Nouvelle tâche</button>
+  </div>
+
+  <div class="column col-done" id="col-done">
+    <div class="column-header">
+      <span class="column-title">Terminé</span>
+      <span class="count-badge" id="count-done">0</span>
+    </div>
+    <div class="task-list" id="list-done"></div>
+    <div class="add-task-form" id="form-done" style="display:none">
+      <textarea rows="3" placeholder="Titre de la tâche…" id="input-done"></textarea>
+      <div class="form-actions">
+        <button class="btn-add" onclick="addTask('done')">Ajouter</button>
+        <button class="btn-cancel" onclick="hideForm('done')">Annuler</button>
+      </div>
+    </div>
+    <button class="btn-new-task" onclick="showForm('done')">＋ Nouvelle tâche</button>
+  </div>
+</div>
+
+<script>
+  const COLS = ['todo', 'inprogress', 'done'];
+  let tasks = JSON.parse(localStorage.getItem('kanban-tasks') || '{}');
+  COLS.forEach(c => { if (!tasks[c]) tasks[c] = []; });
+
+  let draggingId = null;
+  let draggingCol = null;
+
+  function save() {
+    localStorage.setItem('kanban-tasks', JSON.stringify(tasks));
+  }
+
+  function formatDate(ts) {
+    return new Date(ts).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  }
+
+  function render() {
+    COLS.forEach(col => {
+      const list = document.getElementById('list-' + col);
+      const badge = document.getElementById('count-' + col);
+      list.innerHTML = '';
+      badge.textContent = tasks[col].length;
+
+      tasks[col].forEach(task => {
+        const el = document.createElement('div');
+        el.className = 'task';
+        el.draggable = true;
+        el.dataset.id = task.id;
+        el.dataset.col = col;
+        el.innerHTML = `
+          <div class="task-text">${escapeHtml(task.text)}</div>
+          <div class="task-meta">
+            <span class="task-date">${formatDate(task.created)}</span>
+            <button class="delete-btn" title="Supprimer" onclick="deleteTask('${col}', '${task.id}')">✕</button>
+          </div>`;
+
+        el.addEventListener('dragstart', e => {
+          draggingId = task.id;
+          draggingCol = col;
+          el.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        el.addEventListener('dragend', () => el.classList.remove('dragging'));
+
+        list.appendChild(el);
+      });
+
+      list.addEventListener('dragover', e => {
+        e.preventDefault();
+        list.classList.add('drag-over');
+      });
+      list.addEventListener('dragleave', () => list.classList.remove('drag-over'));
+      list.addEventListener('drop', e => {
+        e.preventDefault();
+        list.classList.remove('drag-over');
+        if (!draggingId || col === draggingCol) return;
+        const taskIdx = tasks[draggingCol].findIndex(t => t.id === draggingId);
+        if (taskIdx === -1) return;
+        const [moved] = tasks[draggingCol].splice(taskIdx, 1);
+        tasks[col].push(moved);
+        draggingId = null;
+        draggingCol = null;
+        save();
+        render();
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showForm(col) {
+    document.getElementById('form-' + col).style.display = 'block';
+    document.getElementById('input-' + col).focus();
+  }
+
+  function hideForm(col) {
+    document.getElementById('form-' + col).style.display = 'none';
+    document.getElementById('input-' + col).value = '';
+  }
+
+  function addTask(col) {
+    const input = document.getElementById('input-' + col);
+    const text = input.value.trim();
+    if (!text) return;
+    tasks[col].push({ id: Date.now().toString(), text, created: Date.now() });
+    save();
+    hideForm(col);
+    render();
+  }
+
+  function deleteTask(col, id) {
+    tasks[col] = tasks[col].filter(t => t.id !== id);
+    save();
+    render();
+  }
+
+  // Submit on Enter (without Shift)
+  COLS.forEach(col => {
+    document.getElementById('input-' + col).addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addTask(col); }
+      if (e.key === 'Escape') hideForm(col);
+    });
+  });
+
+  render();
+</script>
+</body>
+</html>
